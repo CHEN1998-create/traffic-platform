@@ -1,0 +1,46 @@
+# --- Go ---
+/bin/
+/build/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.prof
+coverage.out
+
+# 依赖缓存（默认不提交 vendor）
+vendor/
+
+# --- 环境变量 ---
+.env
+.env.*
+!.env.example
+
+# --- 前端（React / Next.js，预留）---
+node_modules/
+dist/
+.next/
+out/
+build/
+.vite/
+*.tsbuildinfo
+
+# --- 日志 ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- IDE / 编辑器 ---
+.idea/
+*.swp
+*.swo
+*~
+
+# --- 操作系统 ---
+.DS_Store
+Thumbs.db
+Desktop.ini
