@@ -1,20 +1,29 @@
 # Go 交通数据分析与可视化平台（骨架）
 
-基于 PRD v0.1 实现的 Go 后端骨架，覆盖「数据接入 + 聚合分析 + 看板展示 + 告警」四大模块。骨架阶段仅做可运行的最简结构，不做复杂分析。
+基于 PRD v0.1 实现的全栈骨架（Go 后端 + React 前端），覆盖「数据接入 + 聚合分析 + 看板展示 + 告警」四大模块。骨架阶段仅做可运行的最简结构，不做复杂分析。
 
 ## 技术栈
+
+**后端**
 
 - Web 框架：Gin
 - 数据库：PostgreSQL（`pgx/v5` 连接池）
 - 定时任务：robfig/cron/v3
 - 配置：环境变量
 
+**前端**
+
+- 构建：Vite + React 18 + TypeScript
+- 路由：React Router v6
+- 图表：ECharts
+- HTTP：axios
+
 ## 目录结构
 
 ```
 .
-├── cmd/server/main.go              # 入口：装配 + 启动 cron + 优雅退出
-├── internal/
+├── cmd/server/main.go              # 后端入口：装配 + 启动 cron + 优雅退出
+├── internal/                       # 后端核心代码
 │   ├── config/config.go            # 配置（数据库连接串、聚合阈值等）
 │   ├── model/model.go              # 数据模型
 │   ├── store/                      # 数据访问层（接口 + PostgreSQL 实现）
@@ -22,6 +31,10 @@
 │   ├── aggregation/scheduler.go    # 定时聚合与告警调度
 │   ├── handler/                    # HTTP handler + 统一响应
 │   └── router/router.go            # 路由注册
+├── frontend/                       # 前端（Vite + React + ECharts）
+│   ├── src/pages/                  # 6 个页面
+│   ├── src/components/             # 布局、指标卡片、图表封装
+│   └── src/api/                    # API 调用封装
 ├── migrations/001_init.sql         # 建表脚本
 └── docker-compose.yml              # 本地 PostgreSQL
 ```
@@ -49,6 +62,18 @@ go run ./cmd/server
 $env:DATABASE_URL = "postgres://traffic:traffic@localhost:5432/traffic?sslmode=disable"
 go run ./cmd/server
 ```
+
+### 3. 启动前端
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+前端默认运行在 `http://localhost:5173`，开发服务器会把 `/api` 请求代理到后端 `:8080`。
+
+> 生产构建：`cd frontend && npm run build`（产物输出到 `frontend/dist`）
 
 ### 环境变量
 
