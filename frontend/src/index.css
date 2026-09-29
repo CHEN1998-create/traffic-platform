@@ -190,6 +190,7 @@ button:hover {
   font-size: 12px;
   color: #fff;
   white-space: nowrap;
+  background: #6b7280; /* 默认灰色兜底，避免未知级别文字不可见 */
 }
 
 .badge-critical { background: #dc2626; }
