@@ -12,10 +12,11 @@ import (
 type AdminHandler struct {
 	ingest *service.IngestService
 	agg    *service.AggregationService
+	alerts *service.AlertService
 }
 
-func NewAdminHandler(ingest *service.IngestService, agg *service.AggregationService) *AdminHandler {
-	return &AdminHandler{ingest: ingest, agg: agg}
+func NewAdminHandler(ingest *service.IngestService, agg *service.AggregationService, alerts *service.AlertService) *AdminHandler {
+	return &AdminHandler{ingest: ingest, agg: agg, alerts: alerts}
 }
 
 // ImportJobs 导入任务状态列表。
@@ -40,6 +41,13 @@ func (h *AdminHandler) AggregateRun(c *gin.Context) {
 	if err := h.agg.Run(c.Request.Context(), in.Window); err != nil {
 		Fail(c, http.StatusBadRequest, 40006, err.Error())
 		return
+	}
+	// 1m 聚合后评估告警（等价于 cron 的完整流程），便于端到端验证告警链路
+	if in.Window == "1m" {
+		if err := h.alerts.Evaluate(c.Request.Context()); err != nil {
+			Fail(c, http.StatusInternalServerError, 50000, err.Error())
+			return
+		}
 	}
 	OK(c, gin.H{"window": in.Window, "status": "completed"})
 }

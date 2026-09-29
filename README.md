@@ -173,3 +173,23 @@ curl -X PATCH http://localhost:8080/api/alerts/1/resolve
 ```
 
 `code` 为 0 表示成功，非 0 为业务错误码（400xx 客户端错误、500xx 服务端错误）。
+
+## 端到端测试
+
+验证两条核心链路：
+
+- 场景 1：接入数据 → 聚合任务 → 看板更新
+- 场景 2：触发告警条件 → 告警记录生成
+
+```bash
+# 1. 启动 PostgreSQL（如未启动）
+docker-compose up -d
+
+# 2. 运行端到端测试（自动启动后端 + 测试 + 清理）
+./scripts/e2e_test.ps1
+
+# 后端已手动启动时
+./scripts/e2e_test.ps1 -SkipBackend
+```
+
+脚本会自动断言每个步骤（生成数据、聚合、看板数据、告警生成、告警处理），输出 `[PASS]`/`[FAIL]`。
