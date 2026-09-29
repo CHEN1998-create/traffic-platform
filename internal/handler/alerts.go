@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -38,6 +39,10 @@ func (h *AlertsHandler) Resolve(c *gin.Context) {
 		return
 	}
 	if err := h.svc.Resolve(c.Request.Context(), id); err != nil {
+		if errors.Is(err, service.ErrAlertNotFound) {
+			Fail(c, http.StatusNotFound, 40400, "alert not found")
+			return
+		}
 		Fail(c, http.StatusInternalServerError, 50000, err.Error())
 		return
 	}
@@ -52,6 +57,10 @@ func (h *AlertsHandler) Ack(c *gin.Context) {
 		return
 	}
 	if err := h.svc.Ack(c.Request.Context(), id); err != nil {
+		if errors.Is(err, service.ErrAlertNotFound) {
+			Fail(c, http.StatusNotFound, 40400, "alert not found")
+			return
+		}
 		Fail(c, http.StatusInternalServerError, 50000, err.Error())
 		return
 	}

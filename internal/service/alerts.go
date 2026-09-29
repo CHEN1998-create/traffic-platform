@@ -2,8 +2,11 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 
 	"traffic-platform/internal/config"
 	"traffic-platform/internal/model"
@@ -14,6 +17,11 @@ import (
 const (
 	RuleFlowSpike = "flow_spike" // 流量高于近 5 分钟均值阈值
 	RuleLowSpeed  = "low_speed"  // 速度连续低于阈值
+)
+
+var (
+	// ErrAlertNotFound 表示告警不存在。
+	ErrAlertNotFound = errors.New("alert not found")
 )
 
 // AlertService 负责告警规则评估与告警处理。
@@ -134,10 +142,22 @@ func (s *AlertService) List(ctx context.Context, level, status string) ([]*model
 
 // Ack 将告警标记为已确认。
 func (s *AlertService) Ack(ctx context.Context, id int64) error {
-	return s.store.AckAlert(ctx, id)
+	if err := s.store.AckAlert(ctx, id); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrAlertNotFound
+		}
+		return err
+	}
+	return nil
 }
 
 // Resolve 将告警标记为已处理。
 func (s *AlertService) Resolve(ctx context.Context, id int64) error {
-	return s.store.ResolveAlert(ctx, id)
+	if err := s.store.ResolveAlert(ctx, id); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrAlertNotFound
+		}
+		return err
+	}
+	return nil
 }
