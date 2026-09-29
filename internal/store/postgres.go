@@ -77,11 +77,23 @@ func (s *PostgresStore) InsertEvents(ctx context.Context, events []*model.RawTra
 	defer tx.Rollback(ctx) //nolint:errcheck // commit 后回滚为无操作
 
 	success := 0
-	for _, e := range events {
+	for i, e := range events {
+		// 每条用 SAVEPOINT 隔离：单条失败回滚该条后继续，实现真正的部分成功
+		// （避免单条失败导致整个事务进入 aborted 状态）。
+		sp := fmt.Sprintf("sp%d", i)
+		if _, err := tx.Exec(ctx, "SAVEPOINT "+sp); err != nil {
+			return 0, err
+		}
 		if err := tx.QueryRow(ctx, insertEventSQL,
 			e.IntersectionID, e.EventTime, e.VehicleCount, e.AvgSpeed, e.Source,
 		).Scan(&e.ID, &e.CreatedAt); err != nil {
+			if _, rbErr := tx.Exec(ctx, "ROLLBACK TO SAVEPOINT "+sp); rbErr != nil {
+				return 0, rbErr
+			}
 			continue
+		}
+		if _, err := tx.Exec(ctx, "RELEASE SAVEPOINT "+sp); err != nil {
+			return 0, err
 		}
 		success++
 	}

@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,7 +21,7 @@ func NewHandlers(ingest *IngestHandler, dashboard *DashboardHandler, alerts *Ale
 	}
 }
 
-// Healthz 健康检查。
+// Healthz 健康检查（统一响应结构）。
 func (h *Handlers) Healthz(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	OK(c, gin.H{"status": "ok"})
 }

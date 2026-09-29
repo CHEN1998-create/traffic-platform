@@ -41,12 +41,9 @@ func (s *AlertService) Evaluate(ctx context.Context) error {
 }
 
 func (s *AlertService) evaluateIntersection(ctx context.Context, a *model.TrafficAgg) error {
-	// 规则 1：平均速度低于阈值
-	if a.AvgSpeed < s.config.LowSpeedThreshold {
-		if err := s.ensureAlert(ctx, a.IntersectionID, RuleLowSpeed, "critical",
-			fmt.Sprintf("avg speed %.1f km/h below threshold %.1f km/h", a.AvgSpeed, s.config.LowSpeedThreshold)); err != nil {
-			return err
-		}
+	// 规则 1：平均速度连续 N 个窗口低于阈值
+	if err := s.evaluateLowSpeed(ctx, a); err != nil {
+		return err
 	}
 
 	// 规则 2：当前流量高于近 5 分钟均值阈值
@@ -74,6 +71,41 @@ func (s *AlertService) evaluateIntersection(ctx context.Context, a *model.Traffi
 		}
 	}
 	return nil
+}
+
+// evaluateLowSpeed 判断速度是否连续 N 个窗口低于阈值（PRD 第 7 节「连续低于阈值」）。
+func (s *AlertService) evaluateLowSpeed(ctx context.Context, a *model.TrafficAgg) error {
+	consecutive := s.config.LowSpeedConsecutiveWindows
+	if consecutive <= 0 {
+		consecutive = 3
+	}
+	if a.AvgSpeed >= s.config.LowSpeedThreshold {
+		return nil
+	}
+
+	// 查询最近 consecutive 个窗口（含当前）的聚合
+	since := a.WindowStart.Add(-time.Duration(consecutive-1) * time.Minute)
+	recent, err := s.store.AggRecentForIntersection(ctx, store.AggWindow1m, a.IntersectionID, since)
+	if err != nil {
+		return err
+	}
+
+	byWindow := make(map[int64]float64, len(recent))
+	for _, r := range recent {
+		byWindow[r.WindowStart.Unix()] = r.AvgSpeed
+	}
+
+	// 从当前窗口往前检查 consecutive 个连续窗口是否都低于阈值
+	for i := 0; i < consecutive; i++ {
+		ws := a.WindowStart.Add(-time.Duration(i) * time.Minute)
+		speed, ok := byWindow[ws.Unix()]
+		if !ok || speed >= s.config.LowSpeedThreshold {
+			return nil // 存在窗口缺口或某窗口速度不低于阈值
+		}
+	}
+
+	return s.ensureAlert(ctx, a.IntersectionID, RuleLowSpeed, "critical",
+		fmt.Sprintf("avg speed below %.1f km/h for %d consecutive minutes", s.config.LowSpeedThreshold, consecutive))
 }
 
 // ensureAlert 避免重复生成同一路口同一规则的未处理告警。

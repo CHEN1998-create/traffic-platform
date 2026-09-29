@@ -84,6 +84,7 @@ npm run dev
 | `FREE_FLOW_SPEED` | `60.0` | 拥堵指数自由流速度（km/h） |
 | `LOW_SPEED_THRESHOLD` | `20.0` | 低速告警阈值（km/h） |
 | `FLOW_SPIKE_FACTOR` | `1.5` | 流量突增告警倍数阈值 |
+| `LOW_SPEED_CONSECUTIVE` | `3` | 连续低速告警需连续低于阈值的窗口数 |
 
 ## 接口清单
 
