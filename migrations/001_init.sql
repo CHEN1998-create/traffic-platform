@@ -24,7 +24,8 @@ CREATE TABLE IF NOT EXISTS traffic_agg_1m (
     window_start     timestamptz NOT NULL,
     total_vehicles   int         NOT NULL,
     avg_speed        numeric     NOT NULL,
-    congestion_index numeric     NOT NULL
+    congestion_index numeric     NOT NULL,
+    CONSTRAINT uq_agg1m_intersection_window UNIQUE (intersection_id, window_start)
 );
 
 CREATE INDEX IF NOT EXISTS idx_agg1m_window       ON traffic_agg_1m (window_start);
@@ -37,7 +38,8 @@ CREATE TABLE IF NOT EXISTS traffic_agg_5m (
     window_start     timestamptz NOT NULL,
     total_vehicles   int         NOT NULL,
     avg_speed        numeric     NOT NULL,
-    congestion_index numeric     NOT NULL
+    congestion_index numeric     NOT NULL,
+    CONSTRAINT uq_agg5m_intersection_window UNIQUE (intersection_id, window_start)
 );
 
 CREATE INDEX IF NOT EXISTS idx_agg5m_window       ON traffic_agg_5m (window_start);
@@ -60,11 +62,12 @@ CREATE INDEX IF NOT EXISTS idx_alerts_rule   ON alerts (rule_code);
 
 -- 5. 导入任务表
 CREATE TABLE IF NOT EXISTS import_jobs (
-    id           bigserial PRIMARY KEY,
-    filename     text        NOT NULL,
-    status       text        NOT NULL,
-    total_rows   int         NOT NULL DEFAULT 0,
-    success_rows int         NOT NULL DEFAULT 0,
-    failed_rows  int         NOT NULL DEFAULT 0,
-    created_at   timestamptz NOT NULL DEFAULT now()
+    id            bigserial PRIMARY KEY,
+    filename      text        NOT NULL,
+    status        text        NOT NULL,
+    total_rows    int         NOT NULL DEFAULT 0,
+    success_rows  int         NOT NULL DEFAULT 0,
+    failed_rows   int         NOT NULL DEFAULT 0,
+    error_details text,
+    created_at    timestamptz NOT NULL DEFAULT now()
 );

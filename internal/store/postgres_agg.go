@@ -17,9 +17,15 @@ func (s *PostgresStore) InsertAgg(ctx context.Context, window AggWindow, a *mode
 	if err != nil {
 		return err
 	}
+	// UPSERT：同一 (intersection_id, window_start) 重复聚合时覆盖而非重复插入，
+	// 保证聚合任务可重复执行且结果稳定（PRD 第 9 节）。
 	sql := fmt.Sprintf(`
 INSERT INTO %s (intersection_id, window_start, total_vehicles, avg_speed, congestion_index)
 VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (intersection_id, window_start)
+DO UPDATE SET total_vehicles = EXCLUDED.total_vehicles,
+              avg_speed = EXCLUDED.avg_speed,
+              congestion_index = EXCLUDED.congestion_index
 RETURNING id`, table)
 	return s.pool.QueryRow(ctx, sql,
 		a.IntersectionID, a.WindowStart, a.TotalVehicles, a.AvgSpeed, a.CongestionIndex,

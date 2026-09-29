@@ -35,7 +35,7 @@
 │   ├── src/pages/                  # 6 个页面
 │   ├── src/components/             # 布局、指标卡片、图表封装
 │   └── src/api/                    # API 调用封装
-├── migrations/001_init.sql         # 建表脚本
+├── migrations/                   # 建表脚本（001 初始化 + 002 增量迁移）
 └── docker-compose.yml              # 本地 PostgreSQL
 ```
 
@@ -91,12 +91,14 @@ npm run dev
 |------|------|------|
 | POST | `/api/traffic/events` | 写入单条交通事件 |
 | POST | `/api/traffic/import` | CSV/批量导入（JSON 数组或 multipart CSV） |
+| POST | `/api/traffic/simulate` | 生成模拟交通事件（演示/测试入口） |
 | GET | `/api/dashboard/overview` | 概览卡片数据 |
 | GET | `/api/dashboard/trend` | 趋势图数据（支持 `start`/`end`） |
 | GET | `/api/dashboard/intersections/top` | 拥堵路口排行（支持 `limit`） |
 | GET | `/api/alerts` | 告警列表（支持 `level`/`status` 筛选） |
 | PATCH | `/api/alerts/:id/resolve` | 处理告警 |
 | GET | `/api/admin/import-jobs` | 导入任务状态 |
+| POST | `/api/admin/aggregate/run` | 手动触发聚合任务（`window` 为 `1m`/`5m`） |
 | GET | `/healthz` | 健康检查 |
 
 ### 请求示例

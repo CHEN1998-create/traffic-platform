@@ -6,6 +6,7 @@ export default function Imports() {
   const [jobs, setJobs] = useState<ImportJob[]>([])
   const [error, setError] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [simulating, setSimulating] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const load = () =>
@@ -33,6 +34,31 @@ export default function Imports() {
     }
   }
 
+  const onSimulate = async () => {
+    setSimulating(true)
+    try {
+      await api.simulate({ intersections: 5, minutes: 10, eventsPerMinute: 3 })
+      await load()
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setSimulating(false)
+    }
+  }
+
+  const renderErrors = (j: ImportJob) => {
+    if (!j.errorDetails) return '—'
+    try {
+      const errs = JSON.parse(j.errorDetails) as { row: number; error: string }[]
+      return errs
+        .slice(0, 3)
+        .map((e) => (e.row > 0 ? `行${e.row}: ${e.error}` : e.error))
+        .join('; ')
+    } catch {
+      return j.errorDetails
+    }
+  }
+
   return (
     <div>
       <h2>数据导入</h2>
@@ -40,6 +66,9 @@ export default function Imports() {
         <input ref={fileRef} type="file" accept=".csv" />
         <button onClick={onUpload} disabled={uploading}>
           {uploading ? '导入中...' : '上传 CSV'}
+        </button>
+        <button onClick={onSimulate} disabled={simulating}>
+          {simulating ? '生成中...' : '生成模拟数据'}
         </button>
       </div>
       {error ? <div className="error">错误：{error}</div> : null}
@@ -53,6 +82,7 @@ export default function Imports() {
             <th>总行数</th>
             <th>成功</th>
             <th>失败</th>
+            <th>错误详情</th>
             <th>时间</th>
           </tr>
         </thead>
@@ -65,6 +95,7 @@ export default function Imports() {
               <td>{j.totalRows}</td>
               <td>{j.successRows}</td>
               <td>{j.failedRows}</td>
+              <td>{renderErrors(j)}</td>
               <td>{new Date(j.createdAt).toLocaleString()}</td>
             </tr>
           ))}

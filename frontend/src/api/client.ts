@@ -53,4 +53,12 @@ export const api = {
     form.append('file', file)
     return unwrap<ImportJob>(http.post<ApiResponse<ImportJob>>('/traffic/import', form))
   },
+  simulate: (params: { intersections?: number; minutes?: number; eventsPerMinute?: number }) =>
+    unwrap<ImportJob>(http.post<ApiResponse<ImportJob>>('/traffic/simulate', params)),
+  aggregateRun: (window: string) =>
+    unwrap<{ window: string; status: string }>(
+      http.post<ApiResponse<{ window: string; status: string }>>('/admin/aggregate/run', {
+        window,
+      }),
+    ),
 }

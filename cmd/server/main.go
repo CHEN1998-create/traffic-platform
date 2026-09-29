@@ -40,7 +40,7 @@ func main() {
 		handler.NewIngestHandler(ingestSvc),
 		handler.NewDashboardHandler(dashSvc),
 		handler.NewAlertsHandler(alertSvc),
-		handler.NewAdminHandler(ingestSvc),
+		handler.NewAdminHandler(ingestSvc, aggSvc),
 	)
 	r := router.New(h)
 

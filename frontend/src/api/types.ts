@@ -59,5 +59,6 @@ export interface ImportJob {
   totalRows: number
   successRows: number
   failedRows: number
+  errorDetails: string
   createdAt: string
 }

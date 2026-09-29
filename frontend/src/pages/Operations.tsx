@@ -6,22 +6,50 @@ export default function Operations() {
   const [jobs, setJobs] = useState<ImportJob[]>([])
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [error, setError] = useState('')
+  const [aggregating, setAggregating] = useState(false)
 
-  useEffect(() => {
+  const loadAll = () => {
     Promise.all([api.importJobs(), api.alerts()])
       .then(([j, a]) => {
         setJobs(j)
         setAlerts(a)
       })
       .catch((e: Error) => setError(e.message))
+  }
+
+  useEffect(() => {
+    loadAll()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const onAggregate = async (window: string) => {
+    setAggregating(true)
+    try {
+      await api.aggregateRun(window)
+      await loadAll()
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setAggregating(false)
+    }
+  }
 
   return (
     <div>
       <h2>任务与告警管理</h2>
       {error ? <div className="error">加载失败：{error}</div> : null}
 
-      <h3>聚合 / 导入任务</h3>
+      <h3>聚合任务</h3>
+      <div style={{ marginBottom: 12, display: 'flex', gap: 8 }}>
+        <button onClick={() => onAggregate('1m')} disabled={aggregating}>
+          {aggregating ? '执行中...' : '手动触发 1m 聚合'}
+        </button>
+        <button onClick={() => onAggregate('5m')} disabled={aggregating}>
+          {aggregating ? '执行中...' : '手动触发 5m 聚合'}
+        </button>
+      </div>
+
+      <h3>导入任务</h3>
       <table className="table">
         <thead>
           <tr>

@@ -3,9 +3,11 @@ package service
 import (
 	"context"
 	"encoding/csv"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -25,6 +27,19 @@ type EventInput struct {
 	VehicleCount   int       `json:"vehicleCount"`
 	AvgSpeed       float64   `json:"avgSpeed"`
 	Source         string    `json:"source"`
+}
+
+// SimulateInput 是生成模拟交通事件的入参。
+type SimulateInput struct {
+	Intersections   int `json:"intersections"`
+	Minutes         int `json:"minutes"`
+	EventsPerMinute int `json:"eventsPerMinute"`
+}
+
+// ImportError 记录单条导入失败的定位信息。
+type ImportError struct {
+	Row   int    `json:"row"`
+	Error string `json:"error"`
 }
 
 // IngestService 负责事件接入与批量导入。
@@ -51,11 +66,13 @@ func (s *IngestService) IngestEvent(ctx context.Context, in EventInput) (*model.
 // ImportJSON 批量导入 JSON 数组并记录导入任务。
 func (s *IngestService) ImportJSON(ctx context.Context, filename string, inputs []EventInput) (*model.ImportJob, error) {
 	events := make([]*model.RawTrafficEvent, 0, len(inputs))
-	failed := 0
-	for _, in := range inputs {
+	var errs []ImportError
+	buildFailed := 0
+	for i, in := range inputs {
 		ev, err := buildEvent(in)
 		if err != nil {
-			failed++
+			buildFailed++
+			errs = append(errs, ImportError{Row: i + 1, Error: err.Error()})
 			continue
 		}
 		events = append(events, ev)
@@ -64,8 +81,11 @@ func (s *IngestService) ImportJSON(ctx context.Context, filename string, inputs 
 	if err != nil {
 		return nil, err
 	}
-	failed += len(events) - success
-	return s.finishImportJob(ctx, filename, len(inputs), success, failed)
+	dbFailed := len(events) - success
+	if dbFailed > 0 {
+		errs = append(errs, ImportError{Row: 0, Error: fmt.Sprintf("database insert failed: %d row(s)", dbFailed)})
+	}
+	return s.finishImportJob(ctx, filename, len(inputs), success, buildFailed+dbFailed, errs)
 }
 
 // ImportCSV 解析 CSV 文件并导入，记录导入任务。
@@ -84,16 +104,20 @@ func (s *IngestService) ImportCSV(ctx context.Context, filename string, r io.Rea
 	}
 
 	events := make([]*model.RawTrafficEvent, 0, len(records))
-	failed := 0
+	var errs []ImportError
+	buildFailed := 0
 	for i := start; i < len(records); i++ {
+		rowNo := i + 1 // CSV 行号从 1 开始（含表头）
 		in, err := parseCSVRow(records[i])
 		if err != nil {
-			failed++
+			buildFailed++
+			errs = append(errs, ImportError{Row: rowNo, Error: err.Error()})
 			continue
 		}
 		ev, err := buildEvent(in)
 		if err != nil {
-			failed++
+			buildFailed++
+			errs = append(errs, ImportError{Row: rowNo, Error: err.Error()})
 			continue
 		}
 		events = append(events, ev)
@@ -103,13 +127,16 @@ func (s *IngestService) ImportCSV(ctx context.Context, filename string, r io.Rea
 	if err != nil {
 		return nil, err
 	}
-	failed += len(events) - success
+	dbFailed := len(events) - success
+	if dbFailed > 0 {
+		errs = append(errs, ImportError{Row: 0, Error: fmt.Sprintf("database insert failed: %d row(s)", dbFailed)})
+	}
 
 	total := len(records) - start
 	if total < 0 {
 		total = 0
 	}
-	return s.finishImportJob(ctx, filename, total, success, failed)
+	return s.finishImportJob(ctx, filename, total, success, buildFailed+dbFailed, errs)
 }
 
 // ListImportJobs 返回导入任务列表。
@@ -117,19 +144,81 @@ func (s *IngestService) ListImportJobs(ctx context.Context) ([]*model.ImportJob,
 	return s.store.ListImportJobs(ctx)
 }
 
-func (s *IngestService) finishImportJob(ctx context.Context, filename string, total, success, failed int) (*model.ImportJob, error) {
+// Simulate 生成一批模拟交通事件并写入数据库（演示/测试入口）。
+func (s *IngestService) Simulate(ctx context.Context, in SimulateInput) (*model.ImportJob, error) {
+	// 参数默认值与上限，避免生成过多数据
+	if in.Intersections <= 0 {
+		in.Intersections = 5
+	}
+	if in.Intersections > 50 {
+		in.Intersections = 50
+	}
+	if in.Minutes <= 0 {
+		in.Minutes = 10
+	}
+	if in.Minutes > 60 {
+		in.Minutes = 60
+	}
+	if in.EventsPerMinute <= 0 {
+		in.EventsPerMinute = 3
+	}
+	if in.EventsPerMinute > 20 {
+		in.EventsPerMinute = 20
+	}
+
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	now := time.Now()
+	events := make([]*model.RawTrafficEvent, 0, in.Intersections*in.Minutes*in.EventsPerMinute)
+	for i := 0; i < in.Intersections; i++ {
+		id := fmt.Sprintf("A-%d", 101+i)
+		for m := in.Minutes - 1; m >= 0; m-- {
+			for e := 0; e < in.EventsPerMinute; e++ {
+				ts := now.Add(-time.Duration(m) * time.Minute).Add(-time.Duration(rng.Intn(60)) * time.Second)
+				events = append(events, &model.RawTrafficEvent{
+					IntersectionID: id,
+					EventTime:      ts,
+					VehicleCount:   20 + rng.Intn(60),
+					AvgSpeed:       15 + rng.Float64()*45,
+					Source:         "simulator",
+				})
+			}
+		}
+	}
+
+	success, err := s.store.InsertEvents(ctx, events)
+	if err != nil {
+		return nil, err
+	}
+	failed := len(events) - success
+	var errs []ImportError
+	if failed > 0 {
+		errs = append(errs, ImportError{Row: 0, Error: fmt.Sprintf("database insert failed: %d row(s)", failed)})
+	}
+	return s.finishImportJob(ctx, "simulator", len(events), success, failed, errs)
+}
+
+func (s *IngestService) finishImportJob(ctx context.Context, filename string, total, success, failed int, errs []ImportError) (*model.ImportJob, error) {
 	status := "completed"
 	if failed > 0 && success == 0 {
 		status = "failed"
 	} else if failed > 0 {
 		status = "partial"
 	}
+
+	details := ""
+	if len(errs) > 0 {
+		if b, err := json.Marshal(errs); err == nil {
+			details = string(b)
+		}
+	}
+
 	job := &model.ImportJob{
-		Filename:    filename,
-		Status:      status,
-		TotalRows:   total,
-		SuccessRows: success,
-		FailedRows:  failed,
+		Filename:     filename,
+		Status:       status,
+		TotalRows:    total,
+		SuccessRows:  success,
+		FailedRows:   failed,
+		ErrorDetails: details,
 	}
 	if err := s.store.InsertImportJob(ctx, job); err != nil {
 		return nil, err

@@ -18,6 +18,7 @@ func New(h *handler.Handlers) *gin.Engine {
 		traffic := api.Group("/traffic")
 		traffic.POST("/events", h.Ingest.PostEvent)
 		traffic.POST("/import", h.Ingest.Import)
+		traffic.POST("/simulate", h.Ingest.Simulate)
 
 		dashboard := api.Group("/dashboard")
 		dashboard.GET("/overview", h.Dashboard.Overview)
@@ -30,6 +31,7 @@ func New(h *handler.Handlers) *gin.Engine {
 
 		admin := api.Group("/admin")
 		admin.GET("/import-jobs", h.Admin.ImportJobs)
+		admin.POST("/aggregate/run", h.Admin.AggregateRun)
 	}
 
 	return r

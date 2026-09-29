@@ -33,6 +33,21 @@ func (h *IngestHandler) PostEvent(c *gin.Context) {
 	Created(c, ev)
 }
 
+// Simulate 生成模拟交通事件。
+func (h *IngestHandler) Simulate(c *gin.Context) {
+	var in service.SimulateInput
+	if err := c.ShouldBindJSON(&in); err != nil {
+		Fail(c, http.StatusBadRequest, 40001, "invalid request body: "+err.Error())
+		return
+	}
+	job, err := h.svc.Simulate(c.Request.Context(), in)
+	if err != nil {
+		Fail(c, http.StatusInternalServerError, 50000, err.Error())
+		return
+	}
+	Created(c, job)
+}
+
 // Import 批量导入：支持 JSON 数组与 multipart CSV 两种方式。
 func (h *IngestHandler) Import(c *gin.Context) {
 	ct := c.GetHeader("Content-Type")

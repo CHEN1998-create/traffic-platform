@@ -75,19 +75,19 @@ SELECT EXISTS(
 // ---- 导入任务 ----
 
 const insertImportJobSQL = `
-INSERT INTO import_jobs (filename, status, total_rows, success_rows, failed_rows, created_at)
-VALUES ($1, $2, $3, $4, $5, now())
+INSERT INTO import_jobs (filename, status, total_rows, success_rows, failed_rows, error_details, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, now())
 RETURNING id, created_at`
 
 func (s *PostgresStore) InsertImportJob(ctx context.Context, j *model.ImportJob) error {
 	return s.pool.QueryRow(ctx, insertImportJobSQL,
-		j.Filename, j.Status, j.TotalRows, j.SuccessRows, j.FailedRows,
+		j.Filename, j.Status, j.TotalRows, j.SuccessRows, j.FailedRows, j.ErrorDetails,
 	).Scan(&j.ID, &j.CreatedAt)
 }
 
 func (s *PostgresStore) ListImportJobs(ctx context.Context) ([]*model.ImportJob, error) {
 	const sql = `
-SELECT id, filename, status, total_rows, success_rows, failed_rows, created_at
+SELECT id, filename, status, total_rows, success_rows, failed_rows, error_details, created_at
 FROM import_jobs
 ORDER BY created_at DESC`
 	rows, err := s.pool.Query(ctx, sql)
@@ -99,7 +99,7 @@ ORDER BY created_at DESC`
 	var out []*model.ImportJob
 	for rows.Next() {
 		var j model.ImportJob
-		if err := rows.Scan(&j.ID, &j.Filename, &j.Status, &j.TotalRows, &j.SuccessRows, &j.FailedRows, &j.CreatedAt); err != nil {
+		if err := rows.Scan(&j.ID, &j.Filename, &j.Status, &j.TotalRows, &j.SuccessRows, &j.FailedRows, &j.ErrorDetails, &j.CreatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, &j)

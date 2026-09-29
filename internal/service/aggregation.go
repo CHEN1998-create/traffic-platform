@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -33,6 +34,18 @@ func (s *AggregationService) Run5m(ctx context.Context) error {
 	end := time.Now().Truncate(5 * time.Minute)
 	start := end.Add(-5 * time.Minute)
 	return s.runWindow(ctx, store.AggWindow5m, start, end)
+}
+
+// Run 手动触发指定窗口的聚合（等价于 cron 触发，用于测试/演示）。
+func (s *AggregationService) Run(ctx context.Context, window string) error {
+	switch store.AggWindow(window) {
+	case store.AggWindow1m:
+		return s.Run1m(ctx)
+	case store.AggWindow5m:
+		return s.Run5m(ctx)
+	default:
+		return fmt.Errorf("window must be '1m' or '5m', got %q", window)
+	}
 }
 
 // runWindow 读取 [start, end) 内的事件，按路口聚合后落库。

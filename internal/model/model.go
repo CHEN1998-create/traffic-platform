@@ -44,11 +44,12 @@ type Alert struct {
 
 // ImportJob 导入任务，对应 import_jobs 表。
 type ImportJob struct {
-	ID          int64     `json:"id" db:"id"`
-	Filename    string    `json:"filename" db:"filename"`
-	Status      string    `json:"status" db:"status"`
-	TotalRows   int       `json:"totalRows" db:"total_rows"`
-	SuccessRows int       `json:"successRows" db:"success_rows"`
-	FailedRows  int       `json:"failedRows" db:"failed_rows"`
-	CreatedAt   time.Time `json:"createdAt" db:"created_at"`
+	ID           int64     `json:"id" db:"id"`
+	Filename     string    `json:"filename" db:"filename"`
+	Status       string    `json:"status" db:"status"`
+	TotalRows    int       `json:"totalRows" db:"total_rows"`
+	SuccessRows  int       `json:"successRows" db:"success_rows"`
+	FailedRows   int       `json:"failedRows" db:"failed_rows"`
+	ErrorDetails string    `json:"errorDetails" db:"error_details"`
+	CreatedAt    time.Time `json:"createdAt" db:"created_at"`
 }
