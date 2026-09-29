@@ -7,7 +7,7 @@ COPY frontend/ .
 RUN npm run build
 
 # ============ 阶段2：后端构建 ============
-FROM golang:1.22-alpine AS backend
+FROM golang:1.25-alpine AS backend
 WORKDIR /app
 COPY . .
 RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd/server
