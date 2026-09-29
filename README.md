@@ -36,7 +36,10 @@
 │   ├── src/components/             # 布局、指标卡片、图表封装
 │   └── src/api/                    # API 调用封装
 ├── migrations/                   # 建表脚本（001 初始化 + 002 增量迁移）
-└── docker-compose.yml              # 本地 PostgreSQL
+├── deploy/                         # 生产部署（Dockerfile + Nginx + 部署文档）
+├── scripts/e2e_test.ps1            # 端到端测试脚本
+├── docker-compose.yml              # 本地开发（PostgreSQL）
+└── docker-compose.prod.yml         # 生产部署编排
 ```
 
 ## 快速开始
@@ -193,3 +196,11 @@ docker-compose up -d
 ```
 
 脚本会自动断言每个步骤（生成数据、聚合、看板数据、告警生成、告警处理），输出 `[PASS]`/`[FAIL]`。
+
+## 生产部署
+
+部署到公共网络（云服务器 + Docker Compose）的完整方案见 [deploy/DEPLOY.md](deploy/DEPLOY.md)：
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
