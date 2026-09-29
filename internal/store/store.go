@@ -44,6 +44,8 @@ type Store interface {
 	InsertAlert(ctx context.Context, a *model.Alert) error
 	ListAlerts(ctx context.Context, level, status string) ([]*model.Alert, error)
 	ResolveAlert(ctx context.Context, id int64) error
+	// AckAlert 将告警标记为已确认（status=acked）。
+	AckAlert(ctx context.Context, id int64) error
 	HasActiveAlert(ctx context.Context, intersectionID, ruleCode string) (bool, error)
 
 	// ---- 导入任务 ----

@@ -97,7 +97,8 @@ npm run dev
 | GET | `/api/dashboard/trend` | 趋势图数据（支持 `start`/`end`） |
 | GET | `/api/dashboard/intersections/top` | 拥堵路口排行（支持 `limit`） |
 | GET | `/api/alerts` | 告警列表（支持 `level`/`status` 筛选） |
-| PATCH | `/api/alerts/:id/resolve` | 处理告警 |
+| PATCH | `/api/alerts/:id/ack` | 确认告警（新建 → 已确认） |
+| PATCH | `/api/alerts/:id/resolve` | 处理告警（→ 已处理） |
 | GET | `/api/admin/import-jobs` | 导入任务状态 |
 | POST | `/api/admin/aggregate/run` | 手动触发聚合任务（`window` 为 `1m`/`5m`） |
 | GET | `/healthz` | 健康检查 |

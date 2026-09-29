@@ -43,6 +43,10 @@ export const api = {
     unwrap<{ id: number; status: string }>(
       http.patch<ApiResponse<{ id: number; status: string }>>(`/alerts/${id}/resolve`),
     ),
+  ackAlert: (id: number) =>
+    unwrap<{ id: number; status: string }>(
+      http.patch<ApiResponse<{ id: number; status: string }>>(`/alerts/${id}/ack`),
+    ),
 
   // 管理端
   importJobs: () => unwrap<ImportJob[]>(http.get<ApiResponse<ImportJob[]>>('/admin/import-jobs')),

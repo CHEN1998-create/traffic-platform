@@ -43,3 +43,17 @@ func (h *AlertsHandler) Resolve(c *gin.Context) {
 	}
 	OK(c, gin.H{"id": id, "status": "resolved"})
 }
+
+// Ack 确认告警，标记为已确认。
+func (h *AlertsHandler) Ack(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		Fail(c, http.StatusBadRequest, 40005, "invalid alert id")
+		return
+	}
+	if err := h.svc.Ack(c.Request.Context(), id); err != nil {
+		Fail(c, http.StatusInternalServerError, 50000, err.Error())
+		return
+	}
+	OK(c, gin.H{"id": id, "status": "acked"})
+}

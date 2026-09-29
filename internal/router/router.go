@@ -28,6 +28,7 @@ func New(h *handler.Handlers) *gin.Engine {
 		alerts := api.Group("/alerts")
 		alerts.GET("", h.Alerts.List)
 		alerts.PATCH("/:id/resolve", h.Alerts.Resolve)
+		alerts.PATCH("/:id/ack", h.Alerts.Ack)
 
 		admin := api.Group("/admin")
 		admin.GET("/import-jobs", h.Admin.ImportJobs)

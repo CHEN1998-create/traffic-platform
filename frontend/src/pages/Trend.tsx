@@ -25,13 +25,17 @@ export default function Trend() {
   }, [hours])
 
   const option: EChartsOption = {
-    title: { text: '车流趋势' },
+    title: { text: '交通趋势' },
     tooltip: { trigger: 'axis' },
+    legend: { data: ['车流量', '平均速度', '拥堵指数'] },
     xAxis: {
       type: 'category',
       data: points.map((p) => new Date(p.windowStart).toLocaleTimeString()),
     },
-    yAxis: { type: 'value' },
+    yAxis: [
+      { type: 'value', name: '车流量' },
+      { type: 'value', name: '速度/指数' },
+    ],
     series: [
       {
         name: '车流量',
@@ -39,6 +43,20 @@ export default function Trend() {
         data: points.map((p) => p.totalVehicles),
         smooth: true,
         areaStyle: {},
+      },
+      {
+        name: '平均速度',
+        type: 'line',
+        yAxisIndex: 1,
+        data: points.map((p) => Math.round(p.avgSpeed * 10) / 10),
+        smooth: true,
+      },
+      {
+        name: '拥堵指数',
+        type: 'line',
+        yAxisIndex: 1,
+        data: points.map((p) => Math.round(p.congestionIndex * 10) / 10),
+        smooth: true,
       },
     ],
   }

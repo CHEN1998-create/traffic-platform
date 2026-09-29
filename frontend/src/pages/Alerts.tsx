@@ -21,6 +21,12 @@ export default function Alerts() {
     setAlerts(list)
   }
 
+  const ack = async (id: number) => {
+    await api.ackAlert(id)
+    const list = await api.alerts(level, status)
+    setAlerts(list)
+  }
+
   return (
     <div>
       <h2>告警</h2>
@@ -62,6 +68,7 @@ export default function Alerts() {
                 <td>{a.status}</td>
                 <td>{a.message}</td>
                 <td>
+                  {a.status === 'new' && <button onClick={() => ack(a.id)}>确认</button>}
                   {a.status !== 'resolved' && (
                     <button onClick={() => resolve(a.id)}>标记已处理</button>
                   )}

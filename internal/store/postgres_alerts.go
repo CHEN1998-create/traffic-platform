@@ -59,6 +59,21 @@ WHERE id = $1`
 	return nil
 }
 
+func (s *PostgresStore) AckAlert(ctx context.Context, id int64) error {
+	const sql = `
+UPDATE alerts
+SET status = 'acked'
+WHERE id = $1`
+	ct, err := s.pool.Exec(ctx, sql, id)
+	if err != nil {
+		return err
+	}
+	if ct.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
+}
+
 func (s *PostgresStore) HasActiveAlert(ctx context.Context, intersectionID, ruleCode string) (bool, error) {
 	const sql = `
 SELECT EXISTS(

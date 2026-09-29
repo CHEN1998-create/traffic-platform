@@ -132,6 +132,11 @@ func (s *AlertService) List(ctx context.Context, level, status string) ([]*model
 	return s.store.ListAlerts(ctx, level, status)
 }
 
+// Ack 将告警标记为已确认。
+func (s *AlertService) Ack(ctx context.Context, id int64) error {
+	return s.store.AckAlert(ctx, id)
+}
+
 // Resolve 将告警标记为已处理。
 func (s *AlertService) Resolve(ctx context.Context, id int64) error {
 	return s.store.ResolveAlert(ctx, id)
