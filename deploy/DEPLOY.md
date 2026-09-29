@@ -1,6 +1,35 @@
 # 部署到公共网络环境
 
-本文档说明如何把交通数据分析平台部署到一台有公网 IP 的云服务器。
+本文提供两种部署方案：
+
+- **方案 A：Render（PaaS，无需服务器，推荐）** —— 从 Git 仓库一键部署，免费层可用，最适合没有云服务器的场景。
+- **方案 B：自有云服务器 + Docker Compose** —— 需要一台有公网 IP 的云服务器。
+
+---
+
+## 方案 A：Render 部署（无需服务器，推荐）
+
+Render 是 PaaS 平台，无需自管服务器，直接从 Git 仓库构建部署。免费层提供 Web 服务（Docker）和 PostgreSQL（90 天试用）。
+
+### 步骤
+
+1. 注册 [Render](https://render.com)（可用 GitHub 账号登录）。
+2. 把本项目推送到 GitHub 仓库。
+3. 在 Render 控制台：**New → Blueprint**，选择你的仓库，Render 会自动读取 `render.yaml`。
+4. Render 自动创建：
+   - `traffic-platform`（Web 服务，Docker 构建，托管 API + 前端）
+   - `traffic-db`（PostgreSQL 数据库，自动注入 `DATABASE_URL`）
+5. 等待构建完成，访问 Render 分配的 `https://xxx.onrender.com` 即可。
+
+> 后端启动时会自动执行 `migrations/*.sql` 建表，无需手动操作。
+>
+> 免费层注意：Web 服务空闲约 15 分钟会休眠（下次访问需冷启动约几十秒）；免费 PostgreSQL 仅 90 天，到期前建议改用 [Neon](https://neon.tech)（永久免费 Postgres）或 [Supabase](https://supabase.com) 免费库，把连接串填入 `DATABASE_URL` 环境变量即可。
+
+---
+
+## 方案 B：自有云服务器 + Docker Compose
+
+本文档剩余部分说明如何把平台部署到一台有公网 IP 的云服务器。
 
 ## 架构
 

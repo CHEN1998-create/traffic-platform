@@ -1,0 +1,19 @@
+# Render Blueprint：一键部署（Web 服务 + PostgreSQL）
+# 使用方式：在 Render 控制台创建 Blueprint，连接 Git 仓库即可。
+services:
+  - type: web
+    name: traffic-platform
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: traffic-db
+          property: connectionString
+      - key: SERVER_ADDR
+        value: ":8080"
+
+databases:
+  - name: traffic-db
+    plan: free

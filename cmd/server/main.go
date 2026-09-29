@@ -29,6 +29,12 @@ func main() {
 	defer st.Close()
 	log.Println("database connected")
 
+	// 自动执行建表迁移（幂等）
+	if err := st.Migrate(ctx); err != nil {
+		log.Fatalf("migrate database: %v", err)
+	}
+	log.Println("database migrated")
+
 	// 2. 装配 service
 	ingestSvc := service.NewIngestService(st)
 	aggSvc := service.NewAggregationService(st, cfg)

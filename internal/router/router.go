@@ -1,6 +1,10 @@
 package router
 
 import (
+	"net/http"
+	"os"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 
 	"traffic-platform/internal/handler"
@@ -35,5 +39,27 @@ func New(h *handler.Handlers) *gin.Engine {
 		admin.POST("/aggregate/run", h.Admin.AggregateRun)
 	}
 
+	// 托管前端静态文件（生产环境）。本地开发时 frontend/dist 不存在，仅提供 API。
+	dist := "./frontend/dist"
+	if isDir(dist) {
+		r.Static("/assets", dist+"/assets")
+	}
+	r.NoRoute(func(c *gin.Context) {
+		if strings.HasPrefix(c.Request.URL.Path, "/api/") {
+			c.JSON(http.StatusNotFound, gin.H{"code": 40400, "message": "not found"})
+			return
+		}
+		if isDir(dist) {
+			c.File(dist + "/index.html")
+			return
+		}
+		c.JSON(http.StatusNotFound, gin.H{"code": 40400, "message": "not found"})
+	})
+
 	return r
+}
+
+func isDir(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
 }
