@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -27,7 +28,11 @@ func (h *IngestHandler) PostEvent(c *gin.Context) {
 	}
 	ev, err := h.svc.IngestEvent(c.Request.Context(), in)
 	if err != nil {
-		Fail(c, http.StatusBadRequest, 40002, err.Error())
+		if errors.Is(err, service.ErrInvalidEvent) {
+			Fail(c, http.StatusBadRequest, 40002, err.Error())
+			return
+		}
+		Fail(c, http.StatusInternalServerError, 50000, err.Error())
 		return
 	}
 	Created(c, ev)

@@ -57,8 +57,12 @@ func (s *PostgresStore) AggTrend(ctx context.Context, window AggWindow, start, e
 	sql := fmt.Sprintf(`
 SELECT min(id), '' AS intersection_id, window_start,
        sum(total_vehicles) AS total_vehicles,
-       avg(avg_speed) AS avg_speed,
-       avg(congestion_index) AS congestion_index
+       CASE WHEN sum(total_vehicles) > 0
+            THEN sum(total_vehicles * avg_speed) / sum(total_vehicles)
+            ELSE 0 END AS avg_speed,
+       CASE WHEN sum(total_vehicles) > 0
+            THEN sum(total_vehicles * congestion_index) / sum(total_vehicles)
+            ELSE 0 END AS congestion_index
 FROM %s
 WHERE window_start >= $1 AND window_start < $2
 GROUP BY window_start
@@ -96,12 +100,16 @@ func (s *PostgresStore) TopIntersections(ctx context.Context, window AggWindow, 
 	sql := fmt.Sprintf(`
 SELECT min(id), intersection_id, max(window_start) AS window_start,
        sum(total_vehicles) AS total_vehicles,
-       avg(avg_speed) AS avg_speed,
-       avg(congestion_index) AS congestion_index
+       CASE WHEN sum(total_vehicles) > 0
+            THEN sum(total_vehicles * avg_speed) / sum(total_vehicles)
+            ELSE 0 END AS avg_speed,
+       CASE WHEN sum(total_vehicles) > 0
+            THEN sum(total_vehicles * congestion_index) / sum(total_vehicles)
+            ELSE 0 END AS congestion_index
 FROM %s
 WHERE window_start >= now() - interval '30 minutes'
 GROUP BY intersection_id
-ORDER BY avg(congestion_index) DESC
+ORDER BY congestion_index DESC
 LIMIT $1`, table)
 	rows, err := s.pool.Query(ctx, sql, limit)
 	if err != nil {

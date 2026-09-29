@@ -77,17 +77,19 @@ func groupByIntersection(events []*model.RawTrafficEvent) map[string][]*model.Ra
 	return grouped
 }
 
+// aggregateList 按车流量加权计算平均速度，保证跨路口/跨窗口聚合口径一致。
 func aggregateList(intersectionID string, windowStart time.Time, list []*model.RawTrafficEvent, freeFlowSpeed float64) *model.TrafficAgg {
 	agg := &model.TrafficAgg{
 		IntersectionID: intersectionID,
 		WindowStart:    windowStart,
 	}
+	var speedWeightedSum float64
 	for _, e := range list {
 		agg.TotalVehicles += e.VehicleCount
-		agg.AvgSpeed += e.AvgSpeed
+		speedWeightedSum += float64(e.VehicleCount) * e.AvgSpeed
 	}
-	if len(list) > 0 {
-		agg.AvgSpeed /= float64(len(list))
+	if agg.TotalVehicles > 0 {
+		agg.AvgSpeed = speedWeightedSum / float64(agg.TotalVehicles)
 	}
 	agg.CongestionIndex = congestionIndex(agg.AvgSpeed, freeFlowSpeed)
 	return agg

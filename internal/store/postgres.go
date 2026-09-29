@@ -106,6 +106,19 @@ func (s *PostgresStore) EventsBetween(ctx context.Context, start, end time.Time)
 	return scanEvents(rows)
 }
 
+const sumVehiclesBetweenSQL = `
+SELECT COALESCE(sum(vehicle_count), 0)
+FROM raw_traffic_events
+WHERE event_time >= $1 AND event_time < $2`
+
+func (s *PostgresStore) SumVehiclesBetween(ctx context.Context, start, end time.Time) (int, error) {
+	var total int
+	if err := s.pool.QueryRow(ctx, sumVehiclesBetweenSQL, start, end).Scan(&total); err != nil {
+		return 0, err
+	}
+	return total, nil
+}
+
 func scanEvents(rows pgx.Rows) ([]*model.RawTrafficEvent, error) {
 	var out []*model.RawTrafficEvent
 	for rows.Next() {

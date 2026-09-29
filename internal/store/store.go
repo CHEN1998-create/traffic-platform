@@ -26,6 +26,8 @@ type Store interface {
 	// InsertEvents 批量写入，返回成功写入条数；单条失败不会中断整体。
 	InsertEvents(ctx context.Context, events []*model.RawTrafficEvent) (int, error)
 	EventsBetween(ctx context.Context, start, end time.Time) ([]*model.RawTrafficEvent, error)
+	// SumVehiclesBetween 返回时间范围内的车流总量（原始事件求和）。
+	SumVehiclesBetween(ctx context.Context, start, end time.Time) (int, error)
 
 	// ---- 聚合 ----
 	InsertAgg(ctx context.Context, window AggWindow, a *model.TrafficAgg) error

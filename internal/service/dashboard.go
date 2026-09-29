@@ -40,15 +40,13 @@ func NewDashboardService(s store.Store) *DashboardService {
 	return &DashboardService{store: s}
 }
 
-// Overview 汇总：当前总车流、未处理告警数、最拥堵路口。
+// Overview 汇总：今日总车流、未处理告警数、最拥堵路口。
 func (s *DashboardService) Overview(ctx context.Context) (*Overview, error) {
-	latest, err := s.store.LatestAgg(ctx, store.AggWindow1m)
+	now := time.Now()
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	total, err := s.store.SumVehiclesBetween(ctx, startOfDay, now)
 	if err != nil {
 		return nil, err
-	}
-	total := 0
-	for _, a := range latest {
-		total += a.TotalVehicles
 	}
 
 	alerts, err := s.store.ListAlerts(ctx, "", "")
