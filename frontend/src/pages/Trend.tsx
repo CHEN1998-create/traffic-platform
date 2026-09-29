@@ -75,7 +75,13 @@ export default function Trend() {
           </button>
         ))}
       </div>
-      {error ? <div className="error">加载失败：{error}</div> : <Chart option={option} height={360} />}
+      {error ? (
+        <div className="error">加载失败：{error}</div>
+      ) : points.length === 0 ? (
+        <div className="empty">暂无趋势数据（请先生成模拟数据并触发聚合）</div>
+      ) : (
+        <Chart option={option} height={360} />
+      )}
     </div>
   )
 }

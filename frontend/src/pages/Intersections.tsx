@@ -15,6 +15,9 @@ export default function Intersections() {
       .catch((e: Error) => setError(e.message))
   }, [])
 
+  const congestionBadge = (idx: number) =>
+    idx >= 60 ? 'badge badge-high' : idx >= 30 ? 'badge badge-mid' : 'badge badge-low'
+
   // 横向柱状图，Y 轴倒序让最拥堵的路口显示在顶部
   const option: EChartsOption = {
     title: { text: '拥堵路口排行（Top10）' },
@@ -42,6 +45,7 @@ export default function Intersections() {
           <table className="table">
             <thead>
               <tr>
+                <th>排名</th>
                 <th>路口</th>
                 <th>总车流</th>
                 <th>平均车速</th>
@@ -49,12 +53,22 @@ export default function Intersections() {
               </tr>
             </thead>
             <tbody>
-              {list.map((i) => (
+              {list.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="empty">暂无排行数据（请先生成模拟数据并触发聚合）</td>
+                </tr>
+              )}
+              {list.map((i, index) => (
                 <tr key={i.intersectionId}>
+                  <td>{index + 1}</td>
                   <td>{i.intersectionId}</td>
                   <td>{i.totalVehicles}</td>
                   <td>{i.avgSpeed.toFixed(1)}</td>
-                  <td>{i.congestionIndex.toFixed(1)}</td>
+                  <td>
+                    <span className={congestionBadge(i.congestionIndex)}>
+                      {i.congestionIndex.toFixed(1)}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>

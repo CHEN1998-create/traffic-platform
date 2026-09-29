@@ -27,6 +27,19 @@ export default function Alerts() {
     setAlerts(list)
   }
 
+  const levelBadge = (level: string) =>
+    level === 'critical' ? 'badge badge-critical' : level === 'warning' ? 'badge badge-warning' : 'badge'
+
+  const statusLabel = (status: string) => {
+    if (status === 'new') return '新建'
+    if (status === 'acked') return '已确认'
+    if (status === 'resolved') return '已处理'
+    return status
+  }
+
+  const statusBadge = (status: string) =>
+    status === 'new' ? 'badge badge-new' : status === 'acked' ? 'badge badge-acked' : 'badge badge-resolved'
+
   return (
     <div>
       <h2>告警</h2>
@@ -59,13 +72,22 @@ export default function Alerts() {
             </tr>
           </thead>
           <tbody>
+            {alerts.length === 0 && (
+              <tr>
+                <td colSpan={7} className="empty">暂无告警</td>
+              </tr>
+            )}
             {alerts.map((a) => (
               <tr key={a.id}>
                 <td>{a.id}</td>
                 <td>{a.intersectionId}</td>
-                <td>{a.level}</td>
+                <td>
+                  <span className={levelBadge(a.level)}>{a.level}</span>
+                </td>
                 <td>{a.ruleCode}</td>
-                <td>{a.status}</td>
+                <td>
+                  <span className={statusBadge(a.status)}>{statusLabel(a.status)}</span>
+                </td>
                 <td>{a.message}</td>
                 <td>
                   {a.status === 'new' && <button onClick={() => ack(a.id)}>确认</button>}
