@@ -25,6 +25,16 @@ Render 是 PaaS 平台，无需自管服务器，直接从 Git 仓库构建部�
 >
 > 免费层注意：Web 服务空闲约 15 分钟会休眠（下次访问需冷启动约几十秒）；免费 PostgreSQL 仅 90 天，到期前建议改用 [Neon](https://neon.tech)（永久免费 Postgres）或 [Supabase](https://supabase.com) 免费库，把连接串填入 `DATABASE_URL` 环境变量即可。
 
+### 部署 Checklist
+
+- [ ] 项目已推送到 GitHub 仓库
+- [ ] 已注册 Render（GitHub 账号登录）
+- [ ] 仓库根目录包含 `Dockerfile` 与 `render.yaml`
+- [ ] 已在 Render 创建 Blueprint（New → Blueprint → 选择仓库）
+- [ ] 构建成功（无编译错误，`logs` 无报错）
+- [ ] 访问 `https://xxx.onrender.com` 能打开看板页面
+- [ ] `POST /api/traffic/simulate` 生成数据后，看板能展示趋势/排行
+
 ---
 
 ## 方案 B：自有云服务器 + Docker Compose
