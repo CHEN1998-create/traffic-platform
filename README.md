@@ -1,6 +1,24 @@
-# Go 交通数据分析与可视化平台（骨架）
+# Go 交通数据分析与可视化平台
 
-基于 PRD v0.1 实现的全栈骨架（Go 后端 + React 前端），覆盖「数据接入 + 聚合分析 + 看板展示 + 告警」四大模块。骨架阶段仅做可运行的最简结构，不做复杂分析。
+> 🌐 **线上演示**：http://47.101.32.47
+
+基于 PRD 实现的交通数据分析与可视化平台，覆盖「数据接入 → 聚合分析 → 告警 → 看板展示」完整链路。采用 Go 后端 + React 前端 + PostgreSQL，已部署上线。
+
+## 功能特性
+
+**后端**
+
+- 数据接入：单条事件写入、CSV / JSON 批量导入、模拟数据生成
+- 聚合分析：1 分钟 / 5 分钟时间窗口聚合，计算车流量、平均速度、拥堵指数
+- 告警引擎：流量突增、连续低速两条规则，支持「新建 → 已确认 → 已处理」状态流转
+- 定时任务：robfig/cron 每分钟聚合并评估告警
+- 自动建表迁移、统一响应结构、错误码规范
+
+**前端**
+
+- 6 个页面：总览看板、趋势分析、路口排行、告警、数据导入、任务管理
+- ECharts 多系列趋势图、拥堵排行柱状图、彩色徽章告警列表
+- 时间范围切换、级别/状态筛选、模拟数据一键生成
 
 ## 技术栈
 
@@ -17,6 +35,19 @@
 - 路由：React Router v6
 - 图表：ECharts
 - HTTP：axios
+
+### 系统架构
+
+```mermaid
+flowchart LR
+    SOURCE["数据源 / 模拟器"] --> API["Go API"]
+    API --> RAW["原始数据表 raw_traffic_events"]
+    RAW --> AGG["聚合任务 cron 1m/5m"]
+    AGG --> ALERT["告警规则"]
+    AGG --> DASH["Dashboard API"]
+    ALERT --> DASH
+    DASH --> WEB["React 看板前端"]
+```
 
 ## 目录结构
 
@@ -103,7 +134,7 @@ npm run dev
 | PATCH | `/api/alerts/:id/ack` | 确认告警（新建 → 已确认） |
 | PATCH | `/api/alerts/:id/resolve` | 处理告警（→ 已处理） |
 | GET | `/api/admin/import-jobs` | 导入任务状态 |
-| POST | `/api/admin/aggregate/run` | 手动触发聚合任务（`window` 为 `1m`/`5m`） |
+| POST | `/api/admin/aggregate/run` | 手动触发聚合（`window` 为 `1m`/`5m`，可选 `minutes` 回填历史窗口） |
 | GET | `/healthz` | 健康检查 |
 
 ### 请求示例
@@ -149,6 +180,28 @@ curl "http://localhost:8080/api/alerts?level=critical&status=new"
 curl -X PATCH http://localhost:8080/api/alerts/1/resolve
 ```
 
+## 快速演示
+
+部署后一条命令生成演示数据并回填聚合，看板即可展示丰富趋势：
+
+```bash
+# 生成 20 个路口 × 60 分钟 × 每分钟 5 条 = 6000 条模拟数据
+curl -X POST http://localhost:8080/api/traffic/simulate \
+  -H "Content-Type: application/json" \
+  -d '{"intersections":20,"minutes":60,"eventsPerMinute":5}'
+
+# 回填聚合最近 60 分钟（趋势图 60 个点、排行 20 个路口）
+curl -X POST http://localhost:8080/api/admin/aggregate/run \
+  -H "Content-Type: application/json" \
+  -d '{"window":"1m","minutes":60}'
+
+curl -X POST http://localhost:8080/api/admin/aggregate/run \
+  -H "Content-Type: application/json" \
+  -d '{"window":"5m","minutes":60}'
+```
+
+也可以直接在前端「数据导入」页点「生成模拟数据」按钮。
+
 ## 定时任务
 
 - 每分钟：聚合上一个 1 分钟窗口到 `traffic_agg_1m`，并评估告警规则
@@ -159,7 +212,7 @@ curl -X PATCH http://localhost:8080/api/alerts/1/resolve
 | 规则码 | 级别 | 触发条件 |
 |--------|------|----------|
 | `flow_spike` | warning | 当前分钟车流高于近 5 分钟均值 1.5 倍 |
-| `low_speed` | critical | 平均速度低于 20 km/h |
+| `low_speed` | critical | 平均速度连续 N 个窗口低于阈值（默认连续 3 分钟 < 20 km/h） |
 
 ## 数据模型
 
