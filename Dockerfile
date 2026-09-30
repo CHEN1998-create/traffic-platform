@@ -9,6 +9,7 @@ RUN npm run build
 # ============ 阶段2：后端构建 ============
 FROM golang:1.25-alpine AS backend
 WORKDIR /app
+ENV GOPROXY=https://goproxy.cn,direct
 COPY . .
 RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd/server
 
