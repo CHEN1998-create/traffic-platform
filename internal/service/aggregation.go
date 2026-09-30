@@ -48,6 +48,31 @@ func (s *AggregationService) Run(ctx context.Context, window string) error {
 	}
 }
 
+// RunRange 聚合 [start, end) 时间范围内的所有窗口（用于回填历史数据）。
+func (s *AggregationService) RunRange(ctx context.Context, window store.AggWindow, start, end time.Time) error {
+	step := windowStep(window)
+	if step == 0 {
+		return fmt.Errorf("unknown window: %s", window)
+	}
+	for ws := start.Truncate(step); ws.Before(end); ws = ws.Add(step) {
+		if err := s.runWindow(ctx, window, ws, ws.Add(step)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func windowStep(window store.AggWindow) time.Duration {
+	switch window {
+	case store.AggWindow1m:
+		return time.Minute
+	case store.AggWindow5m:
+		return 5 * time.Minute
+	default:
+		return 0
+	}
+}
+
 // runWindow 读取 [start, end) 内的事件，按路口聚合后落库。
 func (s *AggregationService) runWindow(ctx context.Context, window store.AggWindow, start, end time.Time) error {
 	events, err := s.store.EventsBetween(ctx, start, end)
